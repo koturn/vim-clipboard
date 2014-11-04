@@ -1,9 +1,8 @@
 " ============================================================================
 " FILE: clipboard.vim
 " AUTHOR: koturn <jeak.koutan.apple@gmail.com>
-" Last Modified: 2014 04/03
 " ============================================================================
-if exists('g:loaded_clipboard.vim')
+if exists('g:loaded_clipboard')
   finish
 endif
 let g:loaded_clipboard = 1
