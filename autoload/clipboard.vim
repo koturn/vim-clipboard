@@ -10,7 +10,7 @@ function! clipboard#getclip() " {{{
   if has('clipboard')
     exec 'let ' . g:clipboard#local_register . ' = ' . g:clipboard#clip_register
   else
-    if has('win32unix') || has('win16') || has('win32') || has('win64')
+    if has('win32unix') || has('win16') || has('win32')
       call s:getclip_cygwin()
     elseif has('mac')
       call s:getclip_mac()
@@ -70,7 +70,7 @@ endif
 
 
 """ In Cygwin
-if has('win32unix') || has('win16') || has('win32') || has('win64')
+if has('win32unix') || has('win16') || has('win32')
   function! s:getclip_cygwin() " {{{
     if executable('getclip')
       new
