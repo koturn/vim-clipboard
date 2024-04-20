@@ -6,7 +6,7 @@ let s:save_cpo = &cpo
 set cpo&vim
 
 
-function! clipboard#getclip()
+function! clipboard#getclip() " {{{
   if has('clipboard')
     exec 'let ' . g:clipboard#local_register . ' = ' . g:clipboard#clip_register
   else
@@ -18,9 +18,9 @@ function! clipboard#getclip()
       echoerr 'Unable to use command: GetClip'
     endif
   endif
-endfunction
+endfunction " }}}
 
-function! clipboard#putclip(...)
+function! clipboard#putclip(...) " {{{
   if a:0 == 0
     exec 'let text = ' . g:clipboard#local_register
   else
@@ -40,12 +40,12 @@ function! clipboard#putclip(...)
       echoerr 'Unable to use command: PutClip'
     endif
   endif
-endfunction
+endfunction " }}}
 
 
 """ In Mac
 if has('mac')
-  function! s:getclip_mac()
+  function! s:getclip_mac() " {{{
     if executable('pbpaste')
       new
       setl buftype=nofile bufhidden=wipe noswapfile nobuflisted
@@ -55,9 +55,9 @@ if has('mac')
     else
       echoerr 'Unable to read from clipboard'
     endif
-  endfunction
+  endfunction " }}}
 
-  function! s:putclip_mac(text)
+  function! s:putclip_mac(text) " {{{
     if executable('pbcopy') && executable('cat') && g:clipboard#use_tmpfile
       call s:putclip_with_tmpfile(a:text, 'pbcopy')
     elseif executable(g:clipboard#other_vim)
@@ -65,13 +65,13 @@ if has('mac')
     else
       echoerr 'Unable to write to clipboard'
     endif
-  endfunction
+  endfunction " }}}
 endif
 
 
 """ In Cygwin
 if has('win32unix') || has('win16') || has('win32') || has('win64')
-  function! s:getclip_cygwin()
+  function! s:getclip_cygwin() " {{{
     if executable('getclip')
       new
       setl buftype=nofile bufhidden=wipe noswapfile nobuflisted
@@ -87,9 +87,9 @@ if has('win32unix') || has('win16') || has('win32') || has('win64')
     else
       echoerr 'Unable to read from clipboard'
     endif
-  endfunction
+  endfunction " }}}
 
-  function! s:putclip_cygwin(text)
+  function! s:putclip_cygwin(text) " {{{
     if filewritable('/dev/clipboard')
       if writefile(split(a:text, '\n'), '/dev/clipboard') == -1
         echoerr 'Unable to write to /dev/clipboard'
@@ -101,11 +101,11 @@ if has('win32unix') || has('win16') || has('win32') || has('win64')
     else
       echoerr 'Unable to write to clipboard'
     endif
-  endfunction
+  endfunction " }}}
 endif
 
 
-function! s:putclip_with_tmpfile(text, cmd)
+function! s:putclip_with_tmpfile(text, cmd) " {{{
   let tmp = tempname()
   let str_list = split(a:text, '\n')
   if writefile(str_list, tmp) == -1
@@ -114,7 +114,7 @@ function! s:putclip_with_tmpfile(text, cmd)
   endif
   call s:system(0, 'cat ' . tmp. ' | ' . a:cmd)
   call delete(tmp)
-endfunction
+endfunction " }}}
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -122,7 +122,7 @@ endfunction
 "   Unable to send too large text.                                            "
 "   Unable to send texts which includes contorol-code.                        "
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! s:putclip_with_other_vim(text)
+function! s:putclip_with_other_vim(text) " {{{
   let text = substitute(a:text, '\',    "\x0c", 'g')
   let text = substitute(text, "\'",     "\x01", 'g')
   let text = substitute(text, '\"',     "\x02", 'g')
@@ -136,10 +136,10 @@ function! s:putclip_with_other_vim(text)
         \ . ' -c "let t = substitute(t, \"\\x0b\", \"\\n\",   \"g\")"'
         \ . ' -c "let ' . g:clipboard#clip_register . ' = t"'
         \ . ' -c quitall!')
-endfunction
+endfunction " }}}
 
 
-function! s:system(is_background, cmd)
+function! s:system(is_background, cmd) " {{{
   " if exists('*vimproc#system')
   if &rtp =~# 'vimproc'
     if a:is_background
@@ -150,7 +150,7 @@ function! s:system(is_background, cmd)
   else
     call system(a:cmd)
   endif
-endfunction
+endfunction " }}}
 
 
 let &cpo = s:save_cpo
