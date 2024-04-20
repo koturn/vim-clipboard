@@ -22,20 +22,20 @@ endfunction
 
 function! clipboard#putclip(...)
   if a:0 == 0
-    exec 'let l:text = ' . g:clipboard#local_register
+    exec 'let text = ' . g:clipboard#local_register
   else
-    let l:text = ''
-    for l:str in a:000
-      let l:text .= l:str
+    let text = ''
+    for str in a:000
+      let text .= str
     endfor
   endif
   if has('clipboard')
-    exec 'let ' . g:clipboard#clip_register . ' = l:text'
+    exec 'let ' . g:clipboard#clip_register . ' = text'
   else
     if has('win32unix')
-      call s:putclip_cygwin(l:text)
+      call s:putclip_cygwin(text)
     elseif has('mac')
-      call s:putclip_mac(l:text)
+      call s:putclip_mac(text)
     else
       echoerr 'Unable to use command: PutClip'
     endif
@@ -77,8 +77,8 @@ if has('win32unix') || has('win16') || has('win32') || has('win64')
       setl buftype=nofile bufhidden=wipe noswapfile nobuflisted
       read !getclip
       " if len(a:reg_name_list)
-      "   for l:reg_name in a:reg_name_list
-      "     exec 'silent normal! ggj0vG$h"' . l:reg_name . 'y'
+      "   for reg_name in a:reg_name_list
+      "     exec 'silent normal! ggj0vG$h"' . reg_name . 'y'
       "   endfor
       " else
       silent normal! ggj0vG$hy
@@ -106,14 +106,14 @@ endif
 
 
 function! s:putclip_with_tmpfile(text, cmd)
-  let l:tmp = tempname()
-  let l:str_list = split(a:text, '\n')
-  if writefile(l:str_list, l:tmp) == -1
+  let tmp = tempname()
+  let str_list = split(a:text, '\n')
+  if writefile(str_list, tmp) == -1
     echoerr 'Failed to make temporary file'
     return
   endif
-  call s:system(0, 'cat ' . l:tmp. ' | ' . a:cmd)
-  call delete(l:tmp)
+  call s:system(0, 'cat ' . tmp. ' | ' . a:cmd)
+  call delete(tmp)
 endfunction
 
 
@@ -123,13 +123,13 @@ endfunction
 "   Unable to send texts which includes contorol-code.                        "
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! s:putclip_with_other_vim(text)
-  let l:text = substitute(a:text, '\',      "\x0c", 'g')
-  let l:text = substitute(l:text, "\'",     "\x01", 'g')
-  let l:text = substitute(l:text, '\"',     "\x02", 'g')
-  let l:text = substitute(l:text, "[\n\r]", "\x0b", 'g')
+  let text = substitute(a:text, '\',    "\x0c", 'g')
+  let text = substitute(text, "\'",     "\x01", 'g')
+  let text = substitute(text, '\"',     "\x02", 'g')
+  let text = substitute(text, "[\n\r]", "\x0b", 'g')
   call s:system(1, g:clipboard#other_vim . ' '
         \ . g:clipboard#other_vim_opt
-        \ . ' -c "let t = \"' . l:text . '\""'
+        \ . ' -c "let t = \"' . text . '\""'
         \ . ' -c "let t = substitute(t, \"\\x0c\", \"\\x5c\", \"g\")"'
         \ . ' -c "let t = substitute(t, \"\\x01\", \"\\x27\", \"g\")"'
         \ . ' -c "let t = substitute(t, \"\\x02\", \"\\x22\", \"g\")"'
