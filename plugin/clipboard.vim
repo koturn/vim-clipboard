@@ -16,8 +16,8 @@ let g:clipboard#other_vim          = get(g:, 'clipboard#other_vim', 'gvim')
 let g:clipboard#other_vim_opt      = get(g:, 'clipboard#other_vim_opt', '-N --noplugin -u NONE -U NONE -i NONE -n')
 let g:clipboard#local_register     = get(g:, 'clipboard#local_register', '@"')
 let g:clipboard#clip_register      = get(g:, 'clipboard#clip_register', '@*')
-command! -bar -nargs=* GetClip  call clipboard#getclip(<f-args>)
-command! -bar -nargs=* PutClip  call clipboard#putclip(<f-args>)
+command! -bar -nargs=? -complete=var GetClip  call clipboard#getclip(<f-args>)
+command! -bar -nargs=? -complete=var PutClip  call clipboard#putclip(<f-args>)
 
 
 let &cpo = s:save_cpo

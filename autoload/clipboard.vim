@@ -6,34 +6,28 @@ let s:save_cpo = &cpo
 set cpo&vim
 
 
-function! clipboard#getclip() " {{{
+function! clipboard#getclip(...) " {{{
   if has('clipboard')
-    execute 'let ' . g:clipboard#local_register . ' = ' . g:clipboard#clip_register
+    execute 'let text = ' . g:clipboard#clip_register
+  elseif executable('getclip')
+    let text = s:system('getclip')
+  elseif executable('pbpaste')
+    let text = s:system('pbpaste')
+  elseif executable('wl-paste')
+    let text = s:system('wl-paste')
+  elseif executable('xclip')
+    let text = s:system('xclip -o')
+  elseif filereadable('/dev/clipboard')
+    let text = join(readfile('/dev/clipboard'), "\n")
   else
-    if executable('getclip')
-      let text = s:system('getclip')
-    elseif executable('pbpaste')
-      let text = s:system('pbpaste')
-    elseif executable('wl-paste')
-      let text = s:system('wl-paste')
-    elseif executable('xclip')
-      let text = s:system('xclip -o')
-    elseif filereadable('/dev/clipboard')
-      let text = join(readfile('/dev/clipboard'), "\n")
-    else
-      echoerr 'Unable to use command: GetClip'
-      return
-    endif
-    execute 'let ' . g:clipboard#local_register . ' = text'
+    echoerr 'Unable to use command: GetClip'
+    return
   endif
+  execute 'let ' . (a:0 > 0 ? a:1 : g:clipboard#local_register) . ' = text'
 endfunction " }}}
 
 function! clipboard#putclip(...) " {{{
-  if a:0 == 0
-    execute 'let text = ' . g:clipboard#local_register
-  else
-    let text = join(a:000, '')
-  endif
+  execute 'let text = ' . (a:0 > 0 ? a:1 : g:clipboard#local_register)
   if has('clipboard')
     execute 'let ' . g:clipboard#clip_register . ' = text'
   elseif executable('putclip')
