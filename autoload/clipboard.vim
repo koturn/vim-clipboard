@@ -10,13 +10,18 @@ function! clipboard#getclip() " {{{
   if has('clipboard')
     execute 'let ' . g:clipboard#local_register . ' = ' . g:clipboard#clip_register
   else
-    if has('win32unix') || has('win16') || has('win32')
-      call s:getclip_cygwin()
-    elseif has('mac')
-      call s:getclip_mac()
+    if executable('getclip')
+      let text = s:system('getclip')
+    elseif executable('pbpaste')
+      let text = s:system('pbpaste')
+    elseif executable('wl-paste')
+      let text = s:system('wl-paste')
+    elseif filereadable('/dev/clipboard')
+      let text = join(readfile('/dev/clipboard'), "\n")
     else
       echoerr 'Unable to use command: GetClip'
     endif
+    execute 'let ' . g:clipboard#local_register . ' = text'
   endif
 endfunction " }}}
 
@@ -24,96 +29,25 @@ function! clipboard#putclip(...) " {{{
   if a:0 == 0
     execute 'let text = ' . g:clipboard#local_register
   else
-    let text = ''
-    for str in a:000
-      let text .= str
-    endfor
+    let text = join(a:000, '')
   endif
   if has('clipboard')
     execute 'let ' . g:clipboard#clip_register . ' = text'
-  else
-    if has('win32unix')
-      call s:putclip_cygwin(text)
-    elseif has('mac')
-      call s:putclip_mac(text)
-    else
-      echoerr 'Unable to use command: PutClip'
-    endif
+  elseif executable('putclip')
+     call s:system('putclip', text)
+   elseif executable('pbcopy')
+     call s:system('pbcopy', text)
+   elseif executable('wl-copy')
+     call s:system('wl-copy', text)
+   elseif filewritable('/dev/clipboard')
+     if writefile(split(text, '\n'), '/dev/clipboard') == -1
+       echoerr 'Unable to write to /dev/clipboard'
+     endif
+   elseif g:clipboard#use_other_vim && executable(g:clipboard#other_vim)
+     call s:putclip_with_other_vim(text)
+   else
+     echoerr 'Unable to use command: PutClip'
   endif
-endfunction " }}}
-
-
-""" In Mac
-if has('mac')
-  function! s:getclip_mac() " {{{
-    if executable('pbpaste')
-      new
-      setl buftype=nofile bufhidden=wipe noswapfile nobuflisted
-      read !pbpaste
-      silent normal! ggj0vG$hy
-      bwipe
-    else
-      echoerr 'Unable to read from clipboard'
-    endif
-  endfunction " }}}
-
-  function! s:putclip_mac(text) " {{{
-    if executable('pbcopy') && executable('cat') && g:clipboard#use_tmpfile
-      call s:putclip_with_tmpfile(a:text, 'pbcopy')
-    elseif executable(g:clipboard#other_vim)
-      call s:putclip_with_other_vim(a:text)
-    else
-      echoerr 'Unable to write to clipboard'
-    endif
-  endfunction " }}}
-endif
-
-
-""" In Cygwin
-if has('win32unix') || has('win16') || has('win32')
-  function! s:getclip_cygwin() " {{{
-    if executable('getclip')
-      new
-      setl buftype=nofile bufhidden=wipe noswapfile nobuflisted
-      read !getclip
-      " if len(a:reg_name_list)
-      "   for reg_name in a:reg_name_list
-      "     execute 'silent normal! ggj0vG$h"' . reg_name . 'y'
-      "   endfor
-      " else
-      silent normal! ggj0vG$hy
-      " endif
-      bwipe
-    else
-      echoerr 'Unable to read from clipboard'
-    endif
-  endfunction " }}}
-
-  function! s:putclip_cygwin(text) " {{{
-    if filewritable('/dev/clipboard')
-      if writefile(split(a:text, '\n'), '/dev/clipboard') == -1
-        echoerr 'Unable to write to /dev/clipboard'
-      endif
-    elseif executable('putclip') && executable('cat') && g:clipboard#use_tmpfile
-      call s:putclip_with_tmpfile(a:text, 'putclip')
-    elseif executable(g:clipboard#other_vim)
-      call s:putclip_with_other_vim(a:text)
-    else
-      echoerr 'Unable to write to clipboard'
-    endif
-  endfunction " }}}
-endif
-
-
-function! s:putclip_with_tmpfile(text, cmd) " {{{
-  let tmp = tempname()
-  let str_list = split(a:text, '\n')
-  if writefile(str_list, tmp) == -1
-    echoerr 'Failed to make temporary file'
-    return
-  endif
-  call s:system(0, 'cat ' . tmp. ' | ' . a:cmd)
-  call delete(tmp)
 endfunction " }}}
 
 
@@ -127,7 +61,7 @@ function! s:putclip_with_other_vim(text) " {{{
   let text = substitute(text, "\'",     "\x01", 'g')
   let text = substitute(text, '\"',     "\x02", 'g')
   let text = substitute(text, "[\n\r]", "\x0b", 'g')
-  call s:system(1, g:clipboard#other_vim . ' '
+  call s:system_bg(g:clipboard#other_vim . ' '
         \ . g:clipboard#other_vim_opt
         \ . ' -c "let t = \"' . text . '\""'
         \ . ' -c "let t = substitute(t, \"\\x0c\", \"\\x5c\", \"g\")"'
@@ -138,19 +72,27 @@ function! s:putclip_with_other_vim(text) " {{{
         \ . ' -c quitall!')
 endfunction " }}}
 
+function! s:_system(...) abort " {{{
+  try
+    let s:system = function('vimproc#system')
+    return call('vimproc#system', a:000)
+  catch /^Vim(call)\=:E117: .\+: vimproc#system$/
+    let s:system = function('system')
+    return call('system', a:000)
+  endtry
+endfunction " }}}
+let s:system = function('s:_system')
 
-function! s:system(is_background, cmd) " {{{
-  " if exists('*vimproc#system')
+function! s:_system_bg(cmd) " {{{
   if &rtp =~# 'vimproc'
-    if a:is_background
-      call vimproc#system_bg(a:cmd)
-    else
-      call vimproc#system(a:cmd)
-    endif
+    let s:system_bg = function('vimproc#system_bg')
+    return vimproc#system_bg(a:cmd)
   else
-    call system(a:cmd)
+    let s:system_bg = function('system')
+    return system(a:cmd)
   endif
 endfunction " }}}
+let s:system_bg = function('s:_system_bg')
 
 
 let &cpo = s:save_cpo

@@ -11,7 +11,6 @@ set cpo&vim
 
 
 let g:clipboard#clipboard_register = get(g:, 'clipboard#clipboard_register', '@*')
-let g:clipboard#use_tmpfile        = get(g:, 'clipboard#use_tmpfile', 1)
 let g:clipboard#use_other_vim      = get(g:, 'clipboard#use_other_vim', 1)
 let g:clipboard#other_vim          = get(g:, 'clipboard#other_vim', 'gvim')
 let g:clipboard#other_vim_opt      = get(g:, 'clipboard#other_vim_opt', '-N --noplugin -u NONE -U NONE -i NONE -n')
