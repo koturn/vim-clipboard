@@ -6,7 +6,7 @@ let s:save_cpo = &cpo
 set cpo&vim
 
 
-function! clipboard#getclip(...) " {{{
+function! clipboard#getclip(...) abort " {{{
   if has('clipboard')
     execute 'let text = ' . g:clipboard#clip_register
   elseif executable('getclip')
@@ -28,7 +28,7 @@ function! clipboard#getclip(...) " {{{
   execute 'let ' . (a:0 > 0 ? a:1 : g:clipboard#local_register) . ' = text'
 endfunction " }}}
 
-function! clipboard#putclip(...) " {{{
+function! clipboard#putclip(...) abort " {{{
   execute 'let text = ' . (a:0 > 0 ? a:1 : g:clipboard#local_register)
   if has('clipboard')
     execute 'let ' . g:clipboard#clip_register . ' = text'
@@ -63,7 +63,7 @@ endfunction " }}}
 "   Unable to send too large text.                                            "
 "   Unable to send texts which includes contorol-code.                        "
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! s:putclip_with_other_vim(text) " {{{
+function! s:putclip_with_other_vim(text) abort " {{{
   let text = substitute(a:text, '\', "\x0c", 'g')
   let text = substitute(text, "\'", "\x01", 'g')
   let text = substitute(text, '\"', "\x02", 'g')
@@ -79,7 +79,7 @@ function! s:putclip_with_other_vim(text) " {{{
         \ . ' -c quitall!')
 endfunction " }}}
 
-function! s:exec_getclip_with_job(cmd) " {{{
+function! s:exec_getclip_with_job(cmd) abort " {{{
   let id = job_start(a:cmd, {'mode': 'raw'})
   try
     let text = ch_readraw(id)
@@ -92,7 +92,7 @@ function! s:exec_getclip_with_job(cmd) " {{{
   endtry
 endfunction " }}}
 
-function! s:_exec_getclip(cmd) " {{{
+function! s:_exec_getclip(cmd) abort " {{{
   if has('job')
     let s:exec_getclip = function('s:exec_getclip_with_job')
     return s:exec_getclip_with_job(a:cmd)
@@ -103,7 +103,7 @@ function! s:_exec_getclip(cmd) " {{{
 endfunction " }}}
 let s:exec_getclip = function('s:_exec_getclip')
 
-function! s:exec_putclip_with_job(cmd, text) " {{{
+function! s:exec_putclip_with_job(cmd, text) abort " {{{
   let id = job_start(a:cmd)
   try
     call ch_sendraw(id, a:text)
@@ -112,7 +112,7 @@ function! s:exec_putclip_with_job(cmd, text) " {{{
   endtry
 endfunction " }}}
 
-function! s:exec_putclip_with_vimproc(cmd, text) " {{{
+function! s:exec_putclip_with_vimproc(cmd, text) abort " {{{
   let handle = vimproc#popen2(a:cmd)
   try
     call handle.stdin.write(a:text)
@@ -122,7 +122,7 @@ function! s:exec_putclip_with_vimproc(cmd, text) " {{{
   endtry
 endfunction " }}}
 
-function! s:_exec_putclip(cmd, text) " {{{
+function! s:_exec_putclip(cmd, text) abort " {{{
   if has('job')
     let s:exec_putclip = function('s:exec_putclip_with_job')
     call s:exec_putclip_with_job(a:cmd, a:text)
@@ -150,7 +150,7 @@ function! s:_system(...) abort " {{{
 endfunction " }}}
 let s:system = function('s:_system')
 
-function! s:_system_bg(cmd) " {{{
+function! s:_system_bg(cmd) abort " {{{
   if &rtp =~# 'vimproc'
     let s:system_bg = function('vimproc#system_bg')
     return vimproc#system_bg(a:cmd)
