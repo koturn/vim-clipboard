@@ -90,13 +90,29 @@ function! s:exec_putclip_with_job(cmd, text) " {{{
   endtry
 endfunction " }}}
 
+function! s:exec_putclip_with_vimproc(cmd, text) " {{{
+  let handle = vimproc#popen2(a:cmd)
+  try
+    call handle.stdin.write(a:text)
+    call handle.stdin.close()
+  catch
+    call vimproc#kill(handle, g:vimproc#SIGKILL)
+  endtry
+endfunction " }}}
+
 function! s:_exec_putclip(cmd, text) " {{{
   if has('job')
     let s:exec_putclip = function('s:exec_putclip_with_job')
     call s:exec_putclip_with_job(a:cmd, a:text)
   else
-    let s:exec_putclip = s:system
-    call s:system(a:cmd, a:text)
+    try
+      call function('vimproc#popen2')
+      let s:exec_putclip = function('s:exec_putclip_with_vimproc')
+      call s:exec_putclip_with_vimproc(a:cmd, a:text)
+    catch /^Vim(call)\=:E117: .\+: vimproc#popen2$/
+      let s:exec_putclip = function('system')
+      call system(a:cmd, a:text)
+    endtry
   endif
 endfunction " }}}
 let s:exec_putclip = function('s:_exec_putclip')
