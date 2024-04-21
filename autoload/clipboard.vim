@@ -60,9 +60,9 @@ endfunction " }}}
 "   Unable to send texts which includes contorol-code.                        "
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! s:putclip_with_other_vim(text) " {{{
-  let text = substitute(a:text, '\',    "\x0c", 'g')
-  let text = substitute(text, "\'",     "\x01", 'g')
-  let text = substitute(text, '\"',     "\x02", 'g')
+  let text = substitute(a:text, '\', "\x0c", 'g')
+  let text = substitute(text, "\'", "\x01", 'g')
+  let text = substitute(text, '\"', "\x02", 'g')
   let text = substitute(text, "[\n\r]", "\x0b", 'g')
   call s:system_bg(g:clipboard#other_vim . ' '
         \ . g:clipboard#other_vim_opt
