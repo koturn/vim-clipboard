@@ -8,7 +8,7 @@ set cpo&vim
 
 function! clipboard#getclip() " {{{
   if has('clipboard')
-    exec 'let ' . g:clipboard#local_register . ' = ' . g:clipboard#clip_register
+    execute 'let ' . g:clipboard#local_register . ' = ' . g:clipboard#clip_register
   else
     if has('win32unix') || has('win16') || has('win32')
       call s:getclip_cygwin()
@@ -22,7 +22,7 @@ endfunction " }}}
 
 function! clipboard#putclip(...) " {{{
   if a:0 == 0
-    exec 'let text = ' . g:clipboard#local_register
+    execute 'let text = ' . g:clipboard#local_register
   else
     let text = ''
     for str in a:000
@@ -30,7 +30,7 @@ function! clipboard#putclip(...) " {{{
     endfor
   endif
   if has('clipboard')
-    exec 'let ' . g:clipboard#clip_register . ' = text'
+    execute 'let ' . g:clipboard#clip_register . ' = text'
   else
     if has('win32unix')
       call s:putclip_cygwin(text)
@@ -78,7 +78,7 @@ if has('win32unix') || has('win16') || has('win32')
       read !getclip
       " if len(a:reg_name_list)
       "   for reg_name in a:reg_name_list
-      "     exec 'silent normal! ggj0vG$h"' . reg_name . 'y'
+      "     execute 'silent normal! ggj0vG$h"' . reg_name . 'y'
       "   endfor
       " else
       silent normal! ggj0vG$hy
