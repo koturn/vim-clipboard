@@ -10,13 +10,13 @@ function! clipboard#getclip(...) " {{{
   if has('clipboard')
     execute 'let text = ' . g:clipboard#clip_register
   elseif executable('getclip')
-    let text = s:system('getclip')
+    let text = s:exec_getclip('getclip')
   elseif executable('pbpaste')
-    let text = s:system('pbpaste')
+    let text = s:exec_getclip('pbpaste')
   elseif executable('wl-paste')
-    let text = s:system('wl-paste')
+    let text = s:exec_getclip('wl-paste')
   elseif executable('xclip')
-    let text = s:system('xclip -o')
+    let text = s:exec_getclip('xclip -o')
   elseif filereadable('/dev/clipboard')
     let text = join(readfile('/dev/clipboard'), "\n")
   else
@@ -74,6 +74,30 @@ function! s:putclip_with_other_vim(text) " {{{
         \ . ' -c "let ' . g:clipboard#clip_register . ' = t"'
         \ . ' -c quitall!')
 endfunction " }}}
+
+function! s:exec_getclip_with_job(cmd) " {{{
+  let id = job_start(a:cmd, {'mode': 'raw'})
+  try
+    let text = ch_readraw(id)
+    while job_status(id) ==# 'run'
+      let text .= ch_readraw(id)
+    endwhile
+    return text
+  finally
+    call ch_close(id)
+  endtry
+endfunction " }}}
+
+function! s:_exec_getclip(cmd) " {{{
+  if has('job')
+    let s:exec_getclip = function('s:exec_getclip_with_job')
+    return s:exec_getclip_with_job(a:cmd)
+  else
+    let s:exec_getclip = s:system
+    return s:system(a:cmd)
+  endif
+endfunction " }}}
+let s:exec_getclip = function('s:_exec_getclip')
 
 function! s:exec_putclip_with_job(cmd, text) " {{{
   let id = job_start(a:cmd)
