@@ -16,10 +16,13 @@ function! clipboard#getclip() " {{{
       let text = s:system('pbpaste')
     elseif executable('wl-paste')
       let text = s:system('wl-paste')
+    elseif executable('xclip')
+      let text = s:system('xclip -o')
     elseif filereadable('/dev/clipboard')
       let text = join(readfile('/dev/clipboard'), "\n")
     else
       echoerr 'Unable to use command: GetClip'
+      return
     endif
     execute 'let ' . g:clipboard#local_register . ' = text'
   endif
@@ -34,19 +37,25 @@ function! clipboard#putclip(...) " {{{
   if has('clipboard')
     execute 'let ' . g:clipboard#clip_register . ' = text'
   elseif executable('putclip')
-     call s:system('putclip', text)
-   elseif executable('pbcopy')
-     call s:system('pbcopy', text)
-   elseif executable('wl-copy')
-     call s:system('wl-copy', text)
-   elseif filewritable('/dev/clipboard')
-     if writefile(split(text, '\n'), '/dev/clipboard') == -1
-       echoerr 'Unable to write to /dev/clipboard'
-     endif
-   elseif g:clipboard#use_other_vim && executable(g:clipboard#other_vim)
-     call s:putclip_with_other_vim(text)
-   else
-     echoerr 'Unable to use command: PutClip'
+    call s:exec_putclip('putclip', text)
+  elseif executable('pbcopy')
+    call s:exec_putclip('pbcopy', text)
+  elseif executable('wl-copy')
+    call s:exec_putclip('wl-copy', text)
+  elseif executable('xclip')
+    call s:exec_putclip('xclip -i', text)
+  elseif executable('clip.exe')
+    call s:exec_putclip('clip.exe', text)
+  elseif executable('/mnt/c/Windows/System32/clip.exe')
+    call s:exec_putclip('/mnt/c/Window/System32/clip.exe', text)
+  elseif filewritable('/dev/clipboard')
+    if writefile(split(text, '\n'), '/dev/clipboard') == -1
+      echoerr 'Unable to write to /dev/clipboard'
+    endif
+  elseif g:clipboard#use_other_vim && executable(g:clipboard#other_vim)
+    call s:putclip_with_other_vim(text)
+  else
+    echoerr 'Unable to use command: PutClip'
   endif
 endfunction " }}}
 
@@ -71,6 +80,26 @@ function! s:putclip_with_other_vim(text) " {{{
         \ . ' -c "let ' . g:clipboard#clip_register . ' = t"'
         \ . ' -c quitall!')
 endfunction " }}}
+
+function! s:exec_putclip_with_job(cmd, text) " {{{
+  let id = job_start(a:cmd)
+  try
+    call ch_sendraw(id, a:text)
+  finally
+    call ch_close(id)
+  endtry
+endfunction " }}}
+
+function! s:_exec_putclip(cmd, text) " {{{
+  if has('job')
+    let s:exec_putclip = function('s:exec_putclip_with_job')
+    call s:exec_putclip_with_job(a:cmd, a:text)
+  else
+    let s:exec_putclip = s:system
+    call s:system(a:cmd, a:text)
+  endif
+endfunction " }}}
+let s:exec_putclip = function('s:_exec_putclip')
 
 function! s:_system(...) abort " {{{
   try
