@@ -92,13 +92,31 @@ function! s:exec_getclip_with_job(cmd) abort " {{{
   endtry
 endfunction " }}}
 
+function! s:exec_getclip_with_vimproc(cmd) abort " {{{
+  let handle = vimproc#popen2(a:cmd)
+  try
+    let text = handle.stdout.read()
+    while !handle.stdout.eof
+      let text .= handle.stdout.read()
+    endwhile
+    return text
+  finally
+    call vimproc#kill(handle, g:vimproc#SIGKILL)
+  endtry
+endfunction " }}}
+
 function! s:_exec_getclip(cmd) abort " {{{
   if has('job')
     let s:exec_getclip = function('s:exec_getclip_with_job')
     return s:exec_getclip_with_job(a:cmd)
   else
-    let s:exec_getclip = s:system
-    return s:system(a:cmd)
+    try
+      let s:exec_getclip = function('s:exec_getclip_with_vimproc')
+      call s:exec_getclip_with_vimproc(a:cmd)
+    catch /^Vim(call)\=:E117: .\+: vimproc#popen2$/
+      let s:exec_getclip = function('system')
+      call system(a:cmd)
+    endtry
   endif
 endfunction " }}}
 let s:exec_getclip = function('s:_exec_getclip')
@@ -128,7 +146,6 @@ function! s:_exec_putclip(cmd, text) abort " {{{
     call s:exec_putclip_with_job(a:cmd, a:text)
   else
     try
-      call function('vimproc#popen2')
       let s:exec_putclip = function('s:exec_putclip_with_vimproc')
       call s:exec_putclip_with_vimproc(a:cmd, a:text)
     catch /^Vim(call)\=:E117: .\+: vimproc#popen2$/
@@ -138,17 +155,6 @@ function! s:_exec_putclip(cmd, text) abort " {{{
   endif
 endfunction " }}}
 let s:exec_putclip = function('s:_exec_putclip')
-
-function! s:_system(...) abort " {{{
-  try
-    let s:system = function('vimproc#system')
-    return call('vimproc#system', a:000)
-  catch /^Vim(call)\=:E117: .\+: vimproc#system$/
-    let s:system = function('system')
-    return call('system', a:000)
-  endtry
-endfunction " }}}
-let s:system = function('s:_system')
 
 function! s:_system_bg(cmd) abort " {{{
   if &rtp =~# 'vimproc'
