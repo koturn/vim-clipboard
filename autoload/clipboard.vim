@@ -90,6 +90,8 @@ function! s:identify_putclip_method() abort " {{{
     return 'clip'
   elseif filewritable('/dev/clipboard')
     return 'dev_clipboard'
+  elseif has('*echoraw') || has('*chansend') || filewritable('/dev/tty') || filewritable('/dev/fd/1')
+    return 'osc52'
   elseif executable(g:clipboard#other_vim)
     return 'gvim_server'
   endif
@@ -122,6 +124,10 @@ endfunction " }}}
 
 function! s:putclip_clip(text) abort " {{{
   call s:exec_putclip(s:get_clipexe_path(), a:text)
+endfunction " }}}
+
+function! s:putclip_osc52(text) abort " {{{
+  call s:write_to_stdout(printf("\e]52;c;%s\e\\", clipboard#base64#encode(a:text)))
 endfunction " }}}
 
 function! s:putclip_dev_clipboard(text) abort " {{{
@@ -170,6 +176,7 @@ let s:putclip_method_dict = extend({
       \ 'xclip': function('s:putclip_xclip'),
       \ 'clip': function('s:putclip_clip'),
       \ 'dev_clipboard': function('s:putclip_dev_clipboard'),
+      \ 'osc52': function('s:putclip_osc52'),
       \ 'gvim_server': function('s:putclip_gvim_server')
       \}, get(g:, 'clipboard#putclip_method_dict', {}))
 
