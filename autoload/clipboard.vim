@@ -277,9 +277,9 @@ endfunction " }}}
 let s:system_bg = function('s:_system_bg')
 
 function! s:_write_to_stdout(text) abort " {{{
-  if has('*echoraw')
+  if exists('*echoraw')
     let s:write_to_stdout = function('s:_write_to_stdout_echoraw')
-  elseif has('*chansend')
+  elseif exists('*chansend')
     let s:write_to_stdout = function('s:_write_to_stdout_chansend')
   elseif filewritable('/dev/tty')
     let s:write_to_stdout = function('s:_write_to_stdout_dev_tty')
@@ -299,7 +299,7 @@ endfunction " }}}
 
 " For neovim.
 function! s:_write_to_stdout_chansend(text) abort " {{{
-  if chansend(v:stdout, a:text) <= 0
+  if chansend(v:stderr, a:text) <= 0
     throw '[vim-clipboard] chansend() failed'
   endif
 endfunction " }}}
